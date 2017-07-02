@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="stop_red">#dd0000</color>
+    <color name="first_blue">#0098CA</color>
+    <color name="go_green">#4bdb6a</color>
+</resources>

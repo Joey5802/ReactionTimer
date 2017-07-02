@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_id">29341073739</string>
+    <string name="package_name">terranovaproductions.reactiontimer</string>
+    <string name="achievement_first_play">CggIy4L1pm0QAhAB</string>
+    <string name="achievement_under_400_milliseconds">CggIy4L1pm0QAhAC</string>
+    <string name="achievement_under_300_milliseconds">CggIy4L1pm0QAhAD</string>
+    <string name="achievement_under_200ms">CggIy4L1pm0QAhAE</string>
+    <string name="achievement_under_100_milliseconds">CggIy4L1pm0QAhAF</string>
+    <string name="achievement_under_50_milliseconds">CggIy4L1pm0QAhAG</string>
+    <string name="achievement_forgot_it_was_running_eh">CggIy4L1pm0QAhAH</string>
+    <string name="leaderboard_fastest_reactions">CggIy4L1pm0QAhAI</string>
+</resources>

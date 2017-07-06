@@ -8,17 +8,14 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.ListView
-import android.widget.TextView
+import android.widget.*
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
-import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.games.Games
-import com.google.android.gms.games.GamesStatusCodes
-import com.google.android.gms.games.leaderboard.LeaderboardVariant
-import com.google.android.gms.games.leaderboard.Leaderboards
+import org.jetbrains.anko.db.insert
+import org.jetbrains.anko.db.replace
+import org.jetbrains.anko.db.select
+import java.text.SimpleDateFormat
 import java.util.*
 
 
@@ -43,25 +40,110 @@ class ScoreFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         val apiClient = (activity as MainActivity).apiClient
-        loadScoreOfLeaderBoard(apiClient)
-        if ((activity as MainActivity).apiClient.isConnected) {
-            Games.Leaderboards.submitScore(apiClient,
-                    getString(R.string.leaderboard_fastest_reactions),
-                    time)
+
+        if (apiClient.isConnected) {
+            Games.Achievements.unlock(apiClient, getString(R.string.achievement_first_play))
+            if (time in 300..400) {
+                Games.Achievements.unlock(apiClient, getString(R.string.achievement_under_400_milliseconds))
+            }
+            if (time in 200..300) {
+                Games.Achievements.unlock(apiClient, getString(R.string.achievement_under_300_milliseconds))
+            }
+            if (time in 100..200) {
+                Games.Achievements.unlock(apiClient, getString(R.string.achievement_under_200ms))
+            }
+            if (time in 50..100) {
+                Games.Achievements.unlock(apiClient, getString(R.string.achievement_under_100_milliseconds))
+            }
+            if (time <= 50) {
+                Games.Achievements.unlock(apiClient, getString(R.string.achievement_under_50_milliseconds))
+            }
+            if (time >= 600000) {
+                Games.Achievements.unlock(apiClient, getString(R.string.achievement_forgot_it_was_running_eh))
+            }
+
+            if ((activity as MainActivity).apiClient.isConnected) {
+                Games.Leaderboards.submitScore(apiClient,
+                        getString(R.string.leaderboard_fastest_reactions),
+                        time)
+            }
         }
-        tvScore = activity.findViewById(R.id.score) as TextView
-        scoreLayout = activity.findViewById(R.id.scoreLayout) as ConstraintLayout
-        scoreGrid = activity.findViewById(R.id.scoreGrid) as ListView
-        tvEmpty = activity.findViewById(R.id.empty) as TextView
-        val viewLeaderboard = activity.findViewById(R.id.view_leaderboard) as Button
+
+        tvScore = activity.findViewById<View>(R.id.score) as TextView
+        scoreLayout = activity.findViewById<View>(R.id.scoreLayout) as ConstraintLayout
+        scoreGrid = activity.findViewById<View>(R.id.scoreGrid) as ListView
+        tvEmpty = activity.findViewById<View>(R.id.empty) as TextView
+
+        activity.database.use {
+            select("Score", "score").exec {
+                val cursor = this
+                val scoresCount = cursor.count
+
+                if (scoresCount < 5) {
+                    val scores = mutableMapOf<Long, Int>()
+                    var index = 0
+                    while (cursor.moveToNext()) {
+                        scores.put(index.toLong(), cursor.getInt(0))
+                        index++
+                    }
+                    val list = scores.values.toMutableList()
+                    list.sort()
+                    if (scoresCount != 0 && time < list[0]) {
+                        Toast.makeText(activity, "Congratulations! You beat your high score!", Toast.LENGTH_SHORT).show()
+                    }
+                    scores.put(3, time.toInt())
+                    setAdapter(scores.values)
+                    insertScore(time)
+                } else {
+                    val scores = mutableMapOf<Long, Int>()
+                    try {
+                        var index = 0
+                        while (cursor.moveToNext()) {
+                            scores.put(index.toLong(), cursor.getInt(0))
+                            index++
+                        }
+                        setAdapter(scores.values)
+                        var maximum = 0
+                        var keyHighest: Long = 0
+                        scores.forEach {
+                            if (it.value >= maximum) {
+                                maximum = it.value
+                                keyHighest = it.key
+                            }
+                        }
+                        if (time < maximum) {
+                            replaceSlowest(keyHighest, time)
+                            val list = scores.values.toMutableList()
+                            list.sort()
+                            if (time < list[0]) {
+                                Toast.makeText(activity, "Congratulations! You beat your high score!", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            Log.i("Score", "Didn't get on high score list")
+                        }
+                        setAdapter(scores.values)
+                    } catch (e: Exception) {
+                        Log.i("ScoreFragment", e.message)
+                    }
+                }
+            }
+        }
+
+        val viewLeaderboard = activity.findViewById<View>(R.id.view_leaderboard) as Button
+        val viewAchievements = activity.findViewById<View>(R.id.view_achievements) as Button
         viewLeaderboard.setOnClickListener {
             startActivityForResult(
-                    Games.Leaderboards.getLeaderboardIntent((activity as MainActivity).apiClient,
-                            getString(R.string.leaderboard_fastest_reactions)), 0);
+                    Games.Leaderboards.getLeaderboardIntent(apiClient,
+                            getString(R.string.leaderboard_fastest_reactions)), 0)
         }
-        val adView = activity.findViewById(R.id.adMob) as AdView
 
-        //request TEST ads to avoid being disabled for clicking your own ads
+        viewAchievements.setOnClickListener {
+            startActivityForResult(Games.Achievements.getAchievementsIntent(apiClient),
+                    1)
+
+        }
+        val adView = activity.findViewById<View>(R.id.adMob) as AdView
+
         val adRequest = AdRequest.Builder()
                 .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
                 .addTestDevice("6AB02553E0F58E621A225D11F014ABFE") // Nexus 6P
@@ -72,21 +154,11 @@ class ScoreFragment : Fragment() {
         val tvheader = TextView(activity)
         tvheader.textSize = 12f
         tvheader.gravity = Gravity.CENTER
-        tvheader.text = "High Scores!"
+        tvheader.text = getString(R.string.high_scores)
 
         scoreGrid.addHeaderView(tvheader)
         scoreGrid.emptyView = tvEmpty
         scoreGrid.isLongClickable = true
-
-        val sTime = ArrayList<Long>()
-        setAdapter(sTime)
-
-//        saveScore.setOnClickListener {
-//            saveScore.isEnabled = false
-//            sTime.add(time)
-//            setAdapter(sTime)
-//            scoreGrid.invalidate()
-//        }
 
         scoreLayout.setOnClickListener {
             activity.supportFragmentManager
@@ -99,37 +171,28 @@ class ScoreFragment : Fragment() {
             val sScore = time.toString() + "ms"
             tvScore.text = sScore
         }
-
     }
 
-    fun setAdapter(sTime: ArrayList<Long>) {
+    fun insertScore(score: Long) {
+        activity.database.use {
+            insert("Score", "score" to score.toInt(), "date" to SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.getDefault()).format(Date()))
+        }
+    }
+
+    fun replaceSlowest(scoreID: Long, score: Long) {
+        val idKey = scoreID + 1
+        activity.database.use {
+            replace("Score", "_id" to idKey, "score" to score)
+        }
+    }
+
+    fun setAdapter(values: MutableCollection<Int>) {
+        val sTime = LinkedList<Int>(values.toMutableList())
         Collections.sort(sTime)
-        Collections.reverseOrder<Any>()
 
         if (!sTime.isEmpty()) {
-            if (sTime.size < 10) {
-                val time_adapter = ArrayAdapter(
-                        activity, android.R.layout.simple_list_item_1, sTime)
-                scoreGrid.adapter = time_adapter
-            } else {
-                val time_adapter = ArrayAdapter(
-                        activity, android.R.layout.simple_list_item_1, sTime.subList(0, 9))
-                scoreGrid.adapter = time_adapter
-            }
+            scoreGrid.adapter = ArrayAdapter<Int>(activity, android.R.layout.simple_list_item_1, sTime)
         }
-    }
-
-    private fun loadScoreOfLeaderBoard(apiClient: GoogleApiClient) {
-        Games.Leaderboards.loadCurrentPlayerLeaderboardScore(apiClient, getString(R.string.leaderboard_fastest_reactions), LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback { scoreResult ->
-            if (isScoreResultValid(scoreResult)) {
-                Log.wtf("SCORE", scoreResult.score.rawScore.toString())
-            }
-        }
-    }
-
-    private fun isScoreResultValid(scoreResult: Leaderboards.LoadPlayerScoreResult?): Boolean {
-        return scoreResult != null && GamesStatusCodes.STATUS_OK == scoreResult.status.statusCode && scoreResult.score != null
     }
 
 }
-

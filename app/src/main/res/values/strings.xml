@@ -11,7 +11,9 @@
     <string name="scores">View Past Scores</string>
     <string name="tryagain">Tap to try again!</string>
     <string name="empty_list">No Saved Scores!</string>
-    <string name="view_leaderboard">View Leaderboard</string>
+    <string name="view_leaderboard">Leaderboard</string>
     <string name="too_soon">Too Soon!</string>
+    <string name="high_scores">High Scores!</string>
+    <string name="achievements">Achievements</string>
 
 </resources>

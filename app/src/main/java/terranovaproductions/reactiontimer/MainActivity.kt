@@ -5,6 +5,7 @@ import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.View
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.games.Games
 
@@ -21,9 +22,9 @@ class MainActivity : AppCompatActivity() {
         apiClient = GoogleApiClient.Builder(applicationContext)
                 .addApi(Games.API)
                 .addScope(Games.SCOPE_GAMES)
+                .setViewForPopups(findViewById<View>(R.id.container))
                 .enableAutoManage(this, {
                     Log.e(ContentValues.TAG, "Could not connect to Play games services")
-//                    activity.finish()
                 }).build()
         supportFragmentManager
                 .beginTransaction()

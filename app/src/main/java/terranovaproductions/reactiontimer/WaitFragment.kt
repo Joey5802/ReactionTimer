@@ -28,10 +28,10 @@ class WaitFragment : Fragment() {
         var randomNum = r.nextInt(7000 - 3000) + 3000
         randomNum = Math.abs(randomNum)
 
-        val tvWait = activity.findViewById(R.id.tvWait) as TextView
-        val tvTap = activity.findViewById(R.id.tryagain) as Button
+        val tvWait = activity.findViewById<View>(R.id.tvWait) as TextView
+        val tvTap = activity.findViewById<View>(R.id.tryagain) as Button
 
-        val waitLayout = activity.findViewById(R.id.waitLayout) as ConstraintLayout
+        val waitLayout = activity.findViewById<View>(R.id.waitLayout) as ConstraintLayout
         waitLayout.setOnClickListener {
             stop = true
             tvWait.text = getString(R.string.too_soon)

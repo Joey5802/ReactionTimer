@@ -28,8 +28,8 @@ class ReactionFragment : Fragment() {
         layout.orientation = LinearLayout.VERTICAL
         val handler = Handler()
 
-        val reactionView = activity.findViewById(R.id.reactionView) as ConstraintLayout
-        val currentTime = activity.findViewById(R.id.reaction_time) as TextView
+        val reactionView = activity.findViewById<View>(R.id.reactionView) as ConstraintLayout
+        val currentTime = activity.findViewById<View>(R.id.reaction_time) as TextView
 
         val updater = object : Runnable {
             override fun run() {

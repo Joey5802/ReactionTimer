@@ -4,7 +4,7 @@
     android:id="@+id/reactionView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/go_green">
+    android:background="@color/go_blue">
 
     <TextView
         android:id="@+id/reaction_time"
